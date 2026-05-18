@@ -1,0 +1,1 @@
+Need to inspect Program.cs, MErrorHandling.cs, and possibly controllers and services for DI registrations. Also need to see project file for package versions causing OpenApi source generator error.
