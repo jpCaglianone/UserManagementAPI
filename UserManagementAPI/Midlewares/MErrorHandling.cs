@@ -8,36 +8,44 @@ namespace UserManagementAPI.Midlewares
         private readonly RequestDelegate _next;
         private readonly ILogger<MErrorHandling> _logger;
 
-        public MErrorHandling (RequestDelegate next, ILogger<MErrorHandling> logger)
+        public MErrorHandling(RequestDelegate next, ILogger<MErrorHandling> logger)
         {
             _next = next;
             _logger = logger;
         }
 
-
-        public async Task InvokeAsync (HttpContext context)
+        public async Task InvokeAsync(HttpContext context)
         {
-            var method = context.Request.Method;
-            var path = context.Request.Path;
-
-            var statusCode = context.Response.StatusCode;
-
             try
             {
                 await _next(context);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.LogError(e, "Error not mounted");
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                context.Response.ContentType = "application/json";
+                _logger.LogError(
+                    ex,
+                    "Unhandled error on {Method} {Path}",
+                    context.Request.Method,
+                    context.Request.Path
+                );
 
-                var response = new { erro = "Erro interno do servidor." };
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.Clear();
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    context.Response.ContentType = "application/json";
 
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                    var response = new
+                    {
+                        status = 500,
+                        error = "Internal Server Error",
+                        message = "An unexpected error occurred.",
+                        traceId = context.TraceIdentifier
+                    };
+
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                }
             }
-
         }
-
     }
 }

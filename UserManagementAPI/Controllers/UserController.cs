@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using UserManagementAPI.Model.DTO.UserDTO;
 using UserManagementAPI.Services;
 
 
@@ -20,20 +21,26 @@ namespace UserManagementAPI.Controllers
         [HttpGet]
         public IActionResult selectOrderId()
         {
-
+            var result = _us.SelectUsers();
+            if (result.Count == 0)
+            {
+                return Ok("Not users in database!");
+            }
             return Ok(_us.SelectUsers());
 
         }
   
         [HttpPost]
-        public IActionResult insertUser(string name)
+        public IActionResult insertUser([FromBody] UserDTO user)
         {
-            if (string.IsNullOrEmpty(name)) 
+
+
+            if (string.IsNullOrEmpty(user.name)) 
             {
                 return BadRequest("Name cannot be null or empty");
             }
 
-            bool insert = _us.insertUser(name);
+            bool insert = _us.insertUser(user.name);
             if (insert)
             {
                 return Ok("User inserted successfully");
@@ -45,9 +52,9 @@ namespace UserManagementAPI.Controllers
         }
 
         [HttpDelete]
-        public IActionResult deleteUser(int id)
+        public IActionResult deleteUser([FromBody] UserDTO user)
         {
-            if (_us.deleteUser(id))
+            if (_us.deleteUser(user.id))
             {
                 return Ok("User deleted successfully");
             }
@@ -55,9 +62,9 @@ namespace UserManagementAPI.Controllers
         }
 
         [HttpPut]
-        public IActionResult putUser(int id, string newName)
+        public IActionResult putUser([FromBody] UserDTO user)
         {
-            if (!_us.updateUser(id, newName))
+            if (!_us.updateUser(user.id, user.name))
             {
                 return StatusCode(500, "Error user not found");
             }

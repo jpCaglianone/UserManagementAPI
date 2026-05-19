@@ -4,36 +4,55 @@
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<MTokenValidation> _logger;
+        private readonly IConfiguration _configuration;
 
-        public MTokenValidation(RequestDelegate next, ILogger<MTokenValidation> logger)
+        public MTokenValidation(
+            RequestDelegate next,
+            ILogger<MTokenValidation> logger,
+            IConfiguration configuration)
         {
             _next = next;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var path = context.Request.Path.Value;
+            var path = context.Request.Path.Value ?? "";
 
-            if (path != null && path.StartsWith("/swagger"))
+            if (path.StartsWith("/swagger") || path.StartsWith("/openapi"))
             {
                 await _next(context);
                 return;
             }
 
-            var _tokken = context.Request.Headers["Authorization"].ToString();
+            var expectedToken = _configuration["ApiToken"] ?? "mysecrettoken";
 
-            _logger.LogInformation("Received request with token: {Token}", _tokken);
+            var hasToken = context.Request.Headers.TryGetValue("Authorization", out var authHeader);
+            var isValidToken = hasToken && authHeader.ToString() == $"Bearer {expectedToken}";
 
-            string _secret = "mysecrettoken";
-
-            if (!context.Request.Headers.TryGetValue("Authorization", out var token) || token != "Bearer " + _secret)
+            if (!isValidToken)
             {
-                _logger.LogWarning("Unauthorized access attempt with token: {Token}", token);
+                _logger.LogWarning(
+                    "Unauthorized request: {Method} {Path}",
+                    context.Request.Method,
+                    context.Request.Path
+                );
+
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("Unauthorized");
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsync("""
+                {
+                    "status": 401,
+                    "error": "Unauthorized",
+                    "message": "A valid bearer token is required."
+                }
+                """);
+
                 return;
             }
+
             await _next(context);
         }
     }
