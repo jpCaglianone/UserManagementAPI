@@ -14,7 +14,6 @@ namespace UserManagementAPI.Controllers
         private readonly UserService _us;
         public UserController(UserService us)
         {
-
             _us = us;
         }
 
@@ -22,13 +21,18 @@ namespace UserManagementAPI.Controllers
         public IActionResult selectOrderId()
         {
 
-            return Ok(_us.Users);
+            return Ok(_us.SelectUsers());
 
         }
   
         [HttpPost]
         public IActionResult insertUser(string name)
         {
+            if (string.IsNullOrEmpty(name)) 
+            {
+                return BadRequest("Name cannot be null or empty");
+            }
+
             bool insert = _us.insertUser(name);
             if (insert)
             {
@@ -41,9 +45,9 @@ namespace UserManagementAPI.Controllers
         }
 
         [HttpDelete]
-        public IActionResult deleteUser(string name)
+        public IActionResult deleteUser(int id)
         {
-            if (_us.deleteUser(name))
+            if (_us.deleteUser(id))
             {
                 return Ok("User deleted successfully");
             }
@@ -51,9 +55,9 @@ namespace UserManagementAPI.Controllers
         }
 
         [HttpPut]
-        public IActionResult putUser(string name, string newName)
+        public IActionResult putUser(int id, string newName)
         {
-            if (!_us.updateUser(name, newName))
+            if (!_us.updateUser(id, newName))
             {
                 return StatusCode(500, "Error user not found");
             }

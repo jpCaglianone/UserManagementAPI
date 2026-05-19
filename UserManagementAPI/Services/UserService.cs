@@ -1,30 +1,36 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using UserManagementAPI.Data.Repository;
 using UserManagementAPI.Model;
 
 namespace UserManagementAPI.Services
 {
     public  class UserService
     {
-        public List<User> Users { get; set; } = new List<User>();
-        public  List<User> SelectUsers()
+        private readonly UserRepository _ur;
+
+        public UserService(UserRepository ur)
         {
-            return Users;
+            _ur = ur;
+        }
+
+        public  List<User ?> SelectUsers()
+        {
+            var result = _ur.SelectUsers();
+
+            return result;
         }
 
         public int MaxID()
         {            
-            return !Users.Any() ? 0 : Users.Max(u => u.id);                       
+            return !_ur.SelectUsers().Any() ? 0 : _ur.SelectUsers().Max(u => u.id);                       
         }
 
         public bool insertUser(string name)
         {
             try
             {
-                Users.Add(new User
-                {
-                    name = name,
-                    id = MaxID() + 1
-                });
+                int id = MaxID() + 1;
+                _ur.InsertUser(new User(id,name));
 
                 return true;
             }
@@ -36,11 +42,12 @@ namespace UserManagementAPI.Services
         }
 
 
-        public bool deleteUser(string name)
+        public bool deleteUser(int id)
         {
             try
             {
-                Users.RemoveAll(u => u.name == name);
+                User? user = _ur.SearchUserById(id);
+                _ur.DeleteUser(user);
                 return true;
             }
             catch(Exception ex) 
@@ -49,15 +56,26 @@ namespace UserManagementAPI.Services
             }
         }
 
-        public bool updateUser(string name, string newName)
+        public bool updateUser(int id, string newName)
         {
-            var user = Users.FirstOrDefault(u => u.name == name);
-            if (user != null)
+            
+            try
             {
-                user.name = newName;
-                return true;
+                User? user = _ur.SearchUserById(id);
+                if (user != null)
+                {
+                    user.name = newName;
+                }
+                else
+                {
+                    return false;
+                }
+                return _ur.UpdateUser(user);
             }
-            return false;
+            catch(Exception ex)
+            {
+                return false;
+            }
         }
     } 
 
