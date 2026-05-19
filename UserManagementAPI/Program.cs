@@ -23,9 +23,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
-app.UseMiddleware<MReqRespLog>();
-//app.UseMiddleware<MTokenValidation>();
 app.UseMiddleware<MErrorHandling>();
+app.UseMiddleware<MReqRespLog>();
+app.UseMiddleware<MTokenValidation>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
